@@ -2,10 +2,10 @@
 #      Main Configs       #
 # ----------------------- #
 
-url: http://yoursite.com
-title: My Octopress Blog
-subtitle: A blogging framework for hackers.
-author: Your Name
+url: http://blog.timbuchwaldt.de
+title: Tims Blog
+subtitle: developing parts of the internet, bit by bit
+author: Tim Buchwaldt
 simple_search: http://google.com/search
 description:
 
@@ -58,8 +58,8 @@ default_asides: [asides/recent_posts.html, asides/github.html, asides/twitter.ht
 # ----------------------- #
 
 # Github repositories
-github_user:
-github_repo_count: 0
+github_user: 21studios
+github_repo_count: 3
 github_show_profile_link: true
 github_skip_forks: true
 
@@ -77,7 +77,7 @@ google_plus_one_size: medium
 
 # Google Plus Profile
 # Hidden: No visible button, just add author information to search results
-googleplus_user: 21studios
+googleplus_user: 100034430577294997030
 googleplus_hidden: false
 
 # Pinboard
