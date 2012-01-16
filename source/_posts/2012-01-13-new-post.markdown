@@ -1,0 +1,13 @@
+---
+layout: post
+title: "just the first post"
+date: 2012-01-13 22:54
+comments: true
+categories: "general"
+---
+{% codeblock lang:ruby %}
+puts "Hello World!"
+expectations.add ["code", "ruby", "learning clojure", "design", "architecture"]
+{% endcodeblock %}
+
+_Tim_
