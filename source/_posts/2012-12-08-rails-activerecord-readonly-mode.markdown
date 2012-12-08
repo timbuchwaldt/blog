@@ -14,7 +14,7 @@ When using readslaves, you most propably want to use them in hot-standby mode an
 - Improved read-performance (which should make up most of your apps traffic)
 - Increased failure resilience (when one of your read-slaves fails, SDP takes it out of the pool, and retries later on that slave)
 - The theoretical chance of being able to run the app in read-only mode
-
+<!--more-->
 To be able to switch Rails to read-only while running, you have to patch ActiveRecords _readonly?_ base method:
 
 ``` ruby   
