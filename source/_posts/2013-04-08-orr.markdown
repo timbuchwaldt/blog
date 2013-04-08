@@ -1,0 +1,52 @@
+---
+layout: post
+title: "Orr, watchever!"
+date: 2013-04-08 21:47
+comments: true
+categories: 
+---
+Orrrr! Watchever ist echt genau der Service, für den ich gerne Geld ausgebe. Außer, dass man ab 20:00 gefühlt wenig damit anfangen kann - was doof ist, weil ich genau dann Filme gucken will.
+
+Praktischerweise baue ich beruflich Web-Architekturen und kümmere ich um die Operations-Aspekte von großen Webanwendungen - im Bereich von n-tausend Anfragen pro Sekunde. Da nervt einen dann der offensichtlich nicht optimal betrieben Videostreamingdienst der für die Feierabendunterhaltung sorgen soll noch mehr.
+
+Ich habe mich dann kurz an die Analyse von dem System gesetzt - und das ganze gestaltet sich relativ einfach. Da muss man bloß mal die Chrome-Developertools aufmachen, und schon sieht man MP4-Segmente vorbeifliegen. Das ganze geht einfach per HTTP - Cool denkt man sich - das kennen wir ja. Das haben schon Generationen von Operations-Leuten skaliert bekommen, das sollte doch einfach sein. Und tatsächlich scheint Watchever da was richtig gemacht zu haben: Das CDN liegt bei Akamai. Das ist immerhin das CDN, was uns unsere OS X Updates so schnell bringt. Schade ist halt, das es trotzdem nicht "flutscht". Da stellt sich dann die Frage: Zahlt Watchever zu wenig, kann Akamai die Last nicht wegstecken oder drosselt am Ende mein Provider Traffic auf der Route, weil Watchever Konkurrenz im Videostreaming-Markt ist?
+
+Das ganze lässt sich allerdings mit einfacher open source Software selber bauen, und wenn man genügend Bandbreite einkauft, kann man damit sogar echt was erreichen. Und weil das ganze so viel Spaß macht, hier die Anleitung, wie man sich den Streaming-Teil selber baut. 
+
+Dafür braucht man:
+
+1. [einen Segmenter](https://github.com/carsonmcdonald/HTTP-Live-Video-Stream-Segmenter-and-Distributor)
+2. [einen Webserver (nginx)](http://nginx.org/)
+3. [einen Cache (varnish)](https://www.varnish-cache.org/)
+4. Ein eigenes nginx-Plugin (Lua), das die Nutzer-Authentifizierung / Freischaltung übernimmt (hat Nutzer X mit Cookie Y jetzt Zugriff auf Stream Z)
+5. Ein paar echte Server (viel RAM für die Varnish, gute SSD-RAIDs für die backend-nginx, viel CPU für die frontend-nginx)
+6. Einige große Switche (hier sollte man auf 10Gbit gehen)
+7. Ein (oder 2) Datacenter in Deutschland (z.B. eins der DE-CIX Datacenter - InterXion, Level3, Telecity, ITENOS)
+8. Einiges an Peering-Kapazität (z.B. von Versatel, T-COM, Telia, Colt, Telefonica)
+9. Ein paar Leute, die sowas betreiben können
+10. Ein gutes Verständnis von Webarchitektur
+11. Einfach Bock drauf, den besten Service zu bieten
+
+
+In Aktion sieht das dann so aus:
+
+1. Der Nutzer will ein Video schauen, schickt also einen Request an den Server
+2. Das Backend entscheidet: Der Nutzer darf den Film sehen, und schaltet ihn in einer Datenbank (z.B. [redis](http://redis.io) frei (IP-basiert)
+3. Der Nutzer bekommt die Seite mit dem Video-Embed dargestellt (wir gehen von [HTTP Livestreaming](http://tools.ietf.org/html/draft-pantos-http-live-streaming-07) aus)
+4. Der Browser fragt die Seite an. Der Frontend-nginx erhält die Anfrage und prüft über ein Lua-Script im redis, ob der User das Video sehen darf
+5. Glück gehabt - der User darf. Die Anfrage wird an den Caching-Layer weitergeleitet:
+    1. Der Caching-Layer (Varnish) hat das Video bereits im Cache (Was relativ wahrscheinlich ist..)
+        1. Der Varnish liefert das Video direkt aus dem RAM aus
+    2. Der Caching-Layer hat das Video noch nicht im Cache
+        1. Er lädt die Daten vom Backend-nginx und speichert sie im RAM zwischen, damit der nächste Nutzer nicht warten muss
+6. Profit! Der Nutzer bekommt sein Video
+
+ Optimalerweise kauft der Dienst dann extreme Bandbreiten-Mengen ein. Und wenn die Monitoring-Systeme merken, das der Traffic einen überrent, versucht man wenigstens noch SD-Qualität auszuliefern. Denn auch das ist nicht besonders schwer: 
+
+Sobald die Last zu hoch wird, kann man per Switch im nginx alle Requests auf HD-Segmente einfach durch einen temporary-redirect auf SD-Segmente umrouten. Damit kriegen dann zwar alle User SD (meh!), aber immherhin überhaupt noch etwas. Noch klüger wäre das natürlich nur bei Prozentzahlen der User zu machen, damit kann man noch feiner aussteuern.
+
+
+__Einziges verbleibendes Problem:__
+Kein Browser unterstützt nativ HTTP Live Streaming. Nicht schlimm, denn nette Menschen haben das bereits implementiert. JWplayer unterstützt z.B. then IETF-Draft von Apple. Und selbst für Silverlight gibts da was. Und schlussendlich könnte man auch einfach eine native App programmieren. Die würde dann vielleicht sogar auf meinem MacBook Air laufen.
+
+Ach, übrigens: Wenn man HTTP Live Streaming benutzt, kann man sich auf dem iPhone/iPad [so ein Gefrickel](http://hetzel.net/2013-04-08/silverlight-video-auf-ios/) sparen. Verrückterweise geht das nämlich auf Apple-Geräten einfach. Und für die Anderen gibt es Software, die das auch unterstützt.
